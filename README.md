@@ -36,7 +36,13 @@ Para probar en una computadora: copia `.env.example` a `.env.local` con tus dato
 
 ### Cambios futuros a la base de datos
 
-Cada cambio posterior a la instalación vendrá en `supabase/actualizaciones/` con fecha. Se ejecuta una sola vez en el SQL Editor.
+Cada cambio posterior a la instalación vendrá en `supabase/actualizaciones/` con fecha. Se ejecuta una sola vez en el SQL Editor. `supabase/instalar.sql` ya incluye todas, así que una instalación nueva no necesita correrlas.
+
+| Fecha | Archivo | Qué trae |
+|---|---|---|
+| 2026-10-26 | `2026-10-26-envases-encargados-fotos.sql` | Registrar por cajas o frascos (el stock sigue en unidades, g o mL), encargados que despachan con nombre y DNI en las actas, y fotos de evidencia de cada entrega |
+
+Las fotos de evidencia se guardan en Supabase Storage (bucket privado `evidencias`). La app las reduce antes de subirlas (unos 150 KB cada una), así que el 1 GB gratuito alcanza para miles de fotos.
 
 ## Estructura
 

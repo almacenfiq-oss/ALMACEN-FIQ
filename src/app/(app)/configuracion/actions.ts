@@ -88,3 +88,19 @@ export async function guardarUsuario(_: Estado, f: FormData): Promise<Estado> {
   }
   return listo(`${nombre} ya tiene acceso como ${ROLES[rol]}.`);
 }
+
+// Encargados del almacén: los que despachan y firman en las actas y constancias
+export async function guardarEncargado(_: Estado, f: FormData): Promise<Estado> {
+  await requierePerfil([...PERSONAL]);
+  const nombre = txt(f, "nombre");
+  if (!nombre) return { error: "Escribe el nombre del encargado." };
+  const dni = txt(f, "dni");
+  if (dni && !/^\d{8}$/.test(dni)) return { error: "El DNI debe tener 8 números." };
+  const supabase = await createClient();
+  const id = txt(f, "id");
+  const { error } = id
+    ? await supabase.from("encargados").update({ nombre, dni, activo: f.get("activo") === "on" }).eq("id", id)
+    : await supabase.from("encargados").insert({ nombre, dni });
+  if (error) return { error: mensajeError(error) };
+  return listo(id ? `${nombre} actualizado.` : `${nombre} agregado.`);
+}

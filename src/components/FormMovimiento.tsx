@@ -3,18 +3,44 @@
 import { useFormAccion } from "@/lib/useFormAccion";
 import { useEffect, useRef, useState } from "react";
 import { registrarMovimiento, type Estado } from "@/app/(app)/inventario/actions";
-import { cant, fecha } from "@/lib/formato";
+import { cant, fecha, numero } from "@/lib/formato";
+import { aBase, unidadesCompatibles } from "@/lib/unidades";
+import { CamposCantidad } from "./CamposEnvase";
 
 type Lote = { id: string; lote: string; vencimiento: string | null; cantidad: number };
 
 // Ingreso, baja o ajuste de un artículo, con lote y vencimiento para reactivos
-export default function FormMovimiento({ articuloId, unidad, reactivo, lotes }: { articuloId: string; unidad: string; reactivo: boolean; lotes: Lote[] }) {
+export default function FormMovimiento({
+  articuloId,
+  unidad,
+  reactivo,
+  lotes,
+  envase,
+  contenido,
+}: {
+  articuloId: string;
+  unidad: string;
+  reactivo: boolean;
+  lotes: Lote[];
+  envase: string | null;
+  contenido: number | null;
+}) {
   const [estado, enviar, enviando] = useFormAccion<Estado>(registrarMovimiento, {});
   const [tipo, setTipo] = useState("ingreso");
   const ref = useRef<HTMLFormElement>(null);
+  const grande = !!contenido && contenido >= 1000 && (unidad === "g" || unidad === "mL");
+  const [tam, setTam] = useState(contenido ? String(grande ? contenido / 1000 : contenido) : "");
+  const [uTam, setUTam] = useState(grande ? (unidad === "g" ? "kg" : "L") : unidad);
+  const [vuelta, setVuelta] = useState(0);
   useEffect(() => {
-    if (estado.ok) ref.current?.reset();
+    if (estado.ok) {
+      ref.current?.reset();
+      setVuelta((v) => v + 1);
+    }
   }, [estado]);
+  const nTam = numero(tam);
+  const tamBase = nTam && !Number.isNaN(nTam) && nTam > 0 ? aBase(nTam, uTam, unidad) : null;
+  const opciones = unidadesCompatibles(unidad);
   const entra = tipo === "ingreso" || tipo === "ajuste_positivo";
   return (
     <form ref={ref} onSubmit={enviar} className="form">
@@ -31,10 +57,34 @@ export default function FormMovimiento({ articuloId, unidad, reactivo, lotes }: 
             <option value="ajuste_negativo">Ajuste: falta en el conteo</option>
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="m-cant">Cantidad ({unidad})</label>
-          <input id="m-cant" name="cantidad" inputMode="decimal" required />
-        </div>
+        <input type="hidden" name="unidad" value={unidad} />
+        {tipo === "ingreso" && envase ? (
+          <>
+            <input type="hidden" name="envase" value={envase} />
+            <div className="field">
+              <label htmlFor="m-tam">Cada {envase} trae</label>
+              <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                <input id="m-tam" name="contenido_num" inputMode="decimal" value={tam} onChange={(e) => setTam(e.target.value)} />
+                {opciones.length > 1 ? (
+                  <select name="contenido_unidad" value={uTam} onChange={(e) => setUTam(e.target.value)} aria-label="Unidad" style={{ width: "auto" }}>
+                    {opciones.map((u) => <option key={u}>{u}</option>)}
+                  </select>
+                ) : (
+                  <>
+                    <input type="hidden" name="contenido_unidad" value={unidad} />
+                    <span className="muted">{unidad === "unidad" ? "unidades" : unidad}</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <CamposCantidad key={vuelta} unidad={unidad} envase={envase} contenidoBase={tamBase} prefijo="m-" />
+          </>
+        ) : (
+          <div className="field">
+            <label htmlFor="m-cant">Cantidad ({unidad === "unidad" ? "unidades" : unidad})</label>
+            <input id="m-cant" name="cantidad" inputMode="decimal" required />
+          </div>
+        )}
         {reactivo && entra && (
           <>
             <div className="field">

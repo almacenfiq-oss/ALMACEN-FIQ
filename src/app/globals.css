@@ -219,9 +219,22 @@ td.falta { color: var(--bad); font-weight: 600; }
 details summary { cursor: pointer; font-weight: 500; }
 @media print { .side, .no-print { display: none !important; } .shell { display: block; background: none; } .main { padding: 0; } }
 .leyenda { font-size: 13px; font-weight: 500; color: var(--muted); padding: 0; margin-bottom: 4px; }
-.firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; text-align: center; font-size: 14px; }
-.firmas div { border-top: 1px solid var(--fg); padding-top: 6px; }
-.firmas small { color: var(--muted); }
+.firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 56px; font-size: 13.5px; }
+.firma { display: grid; gap: 4px; align-content: start; }
+.firma .linea { border-top: 1px solid var(--fg); margin-bottom: 4px; }
+.doc-cab { display: none; justify-content: space-between; gap: 16px; border-bottom: 2px solid var(--fg); padding-bottom: 8px; font-size: 13px; }
+.doc-num { text-align: right; }
+.solo-print { display: none; }
+@media print {
+  body { background: #fff; color: #000; font-size: 12.5px; }
+  .doc-cab { display: flex; }
+  .solo-print { display: grid; break-before: page; }
+  .panel { border: 0; padding: 0; }
+  .table-wrap { border: 1px solid #999; }
+  th { background: #eee !important; color: #000; }
+  a { color: #000; text-decoration: none; }
+  .head .sub, .alert { display: none; }
+}
 .tabs a.tab { text-decoration: none; padding: 8px 12px; color: var(--muted); font-weight: 500; border-bottom: 2px solid transparent; }
 .tabs a.tab.on { color: var(--fg); border-bottom-color: var(--accent); }
 .icono { flex: none; vertical-align: middle; }
@@ -236,3 +249,11 @@ details summary { cursor: pointer; font-weight: 500; }
 .head h1 .icono { color: var(--accent); margin-right: 6px; }
 .tipo-ico { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; }
 td.mono, td .mono { white-space: nowrap; }
+.total-env { padding: 8px 0; font-size: 16px; }
+.fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.foto { margin: 0; display: grid; gap: 6px; }
+.foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.foto figcaption { display: grid; gap: 4px; font-size: 13px; }
+.foto-falta { aspect-ratio: 4 / 3; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 13px; }
+.foto-previa { max-width: 240px; max-height: 240px; border-radius: 8px; border: 1px solid var(--line); }
+.aviso-panel { border-color: #e3b341; background: color-mix(in srgb, #e3b341 8%, var(--surface)); }

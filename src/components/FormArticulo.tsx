@@ -3,6 +3,9 @@
 import { useFormAccion } from "@/lib/useFormAccion";
 import { useRef, useState } from "react";
 import EscanerCamara from "./EscanerCamara";
+import { CamposCantidad, CamposEnvase } from "./CamposEnvase";
+import { aBase, ENVASE_COMO_UNIDAD, leerPresentacion, unidadesCompatibles } from "@/lib/unidades";
+import { numero } from "@/lib/formato";
 import type { Estado } from "@/app/(app)/inventario/actions";
 import { PICTOGRAMAS, TIPOS, UNIDADES, type ArticuloVista, type Familia, type Grupo, type TipoArticulo } from "@/lib/tipos";
 
@@ -29,6 +32,20 @@ export default function FormArticulo({
   const raices = familias.filter((f) => !f.padre_id).sort((a, b) => a.orden - b.orden);
   const hijas = (id: string) => familias.filter((f) => f.padre_id === id).sort((a, b) => a.orden - b.orden);
   const reactivo = tipo === "reactivo";
+  // Si el artículo antiguo solo tenía la presentación escrita ("Frasco 1 kg"), se sugiere desde ahí
+  const sugerido = inicial?.contenido ? null : leerPresentacion(inicial?.presentacion, inicial?.unidad ?? "g");
+  const [unidad, setUnidad] = useState(inicial?.unidad ?? (reactivo ? "g" : "unidad"));
+  const [envase, setEnvase] = useState(inicial?.envase ?? sugerido?.envase ?? "");
+  const contIni = inicial?.contenido ?? sugerido?.contenido ?? null;
+  const grande = contIni != null && contIni >= 1000 && (unidad === "g" || unidad === "mL");
+  const [contenido, setContenido] = useState(contIni == null ? "" : String(grande ? contIni / 1000 : contIni));
+  const [uContenido, setUContenido] = useState(grande ? (unidad === "g" ? "kg" : "L") : unidad);
+  const nCont = numero(contenido);
+  const contenidoBase = envase && nCont && !Number.isNaN(nCont) && nCont > 0 ? aBase(nCont, unidadesCompatibles(unidad).includes(uContenido) ? uContenido : unidad, unidad) : null;
+  const cambiarTipo = (t: TipoArticulo) => {
+    setTipo(t);
+    if (!inicial?.id) setUnidad(t === "reactivo" ? "g" : "unidad");
+  };
 
   return (
     <form onSubmit={enviar} className="form">
@@ -39,7 +56,7 @@ export default function FormArticulo({
       <div className="fields">
         <div className="field">
           <label htmlFor="a-tipo">Tipo</label>
-          <select id="a-tipo" name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoArticulo)}>
+          <select id="a-tipo" name="tipo" value={tipo} onChange={(e) => cambiarTipo(e.target.value as TipoArticulo)}>
             {Object.entries(TIPOS).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
           </select>
         </div>
@@ -151,15 +168,12 @@ export default function FormArticulo({
           <input id="a-marca" name="marca" defaultValue={v(inicial?.marca)} placeholder={reactivo ? "Merck" : "Pyrex"} />
         </div>
         <div className="field">
-          <label htmlFor="a-pres">Presentación</label>
-          <input id="a-pres" name="presentacion" defaultValue={v(inicial?.presentacion)} placeholder={reactivo ? "Frasco de 500 g" : "Caja x 12"} />
-        </div>
-        <div className="field">
           <label htmlFor="a-unidad">Se cuenta en</label>
-          <select id="a-unidad" name="unidad" defaultValue={inicial?.unidad ?? (reactivo ? "g" : "unidad")} key={`u-${reactivo}`}>
-            {UNIDADES.map((u) => <option key={u}>{u}</option>)}
+          <select id="a-unidad" name="unidad" value={unidad} onChange={(e) => setUnidad(e.target.value)}>
+            {UNIDADES.filter((u) => !ENVASE_COMO_UNIDAD.includes(u) || u === inicial?.unidad).map((u) => <option key={u}>{u}</option>)}
           </select>
         </div>
+        <CamposEnvase unidad={unidad} envase={envase} setEnvase={setEnvase} contenido={contenido} setContenido={setContenido} uContenido={uContenido} setUContenido={setUContenido} />
         <div className="field">
           <label htmlFor="a-min">Stock mínimo (alerta)</label>
           <input id="a-min" name="stock_minimo" inputMode="decimal" defaultValue={v(inicial?.stock_minimo ?? "")} placeholder="0" />
@@ -187,10 +201,7 @@ export default function FormArticulo({
 
         {nuevo ? (
           <>
-            <div className="field">
-              <label htmlFor="a-ini">Cantidad que hay hoy</label>
-              <input id="a-ini" name="cantidad_inicial" inputMode="decimal" placeholder="0" />
-            </div>
+            <CamposCantidad unidad={unidad} envase={envase || null} contenidoBase={contenidoBase} prefijo="a-ini-" etiqueta="Cantidad que hay hoy" />
             {reactivo && (
               <>
                 <div className="field">
@@ -211,7 +222,11 @@ export default function FormArticulo({
           </label>
         )}
       </div>
-      {reactivo && <p className="ayuda">Consejo: cuenta los sólidos en gramos y los líquidos en mililitros; así las prácticas se calculan exacto.</p>}
+      <p className="ayuda">
+        {reactivo
+          ? "Los reactivos se cuentan en gramos o mililitros, aunque vengan en frascos: así entregas cantidades exactas y ves cuánto queda en cada frasco."
+          : "El stock se cuenta en piezas. Si vienen en caja, di cuántas trae cada caja y al ingresar escribe cuántas cajas llegan: la app suma las piezas."}
+      </p>
       <div className="row">
         <button className="btn primary" type="submit" disabled={enviando}>
           {enviando ? "Guardando…" : nuevo ? "Crear artículo" : "Guardar cambios"}

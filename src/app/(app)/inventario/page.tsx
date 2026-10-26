@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { esPersonal, requierePerfil } from "@/lib/sesion";
 import { cant, fecha, hoy, patron, sumarDias } from "@/lib/formato";
+import { enEnvases } from "@/lib/unidades";
 import { TIPOS, type ArticuloVista } from "@/lib/tipos";
 import { EstadoStock, Pictogramas } from "@/components/Etiquetas";
 import Icono, { ICONO_TIPO } from "@/components/Iconos";
@@ -132,7 +133,10 @@ export default async function Inventario({ searchParams }: { searchParams: Promi
                   </td>
                   <td>{a.tipo === "reactivo" ? (a.familia ? <>{a.familia}{a.subfamilia && <div className="muted" style={{ fontSize: 13 }}>{a.subfamilia}</div>}</> : <span className="muted">Sin clasificar</span>) : "—"}</td>
                   <td>{a.ubicacion ?? <span className="muted">—</span>}</td>
-                  <td className="r num">{cant(a.stock)} <span className="muted">{a.unidad}</span></td>
+                  <td className="r num">
+                    {cant(a.stock)} <span className="muted">{a.unidad}</span>
+                    {a.contenido && a.stock > 0 && <div className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>{enEnvases(a.stock, a.contenido, a.envase, a.unidad)}</div>}
+                  </td>
                   <td className="r num">{a.prestado > 0 ? cant(a.prestado) : "—"}</td>
                   <td className="r num"><b>{cant(a.utilizable)}</b></td>
                   <td>

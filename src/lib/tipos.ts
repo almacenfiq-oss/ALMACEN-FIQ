@@ -82,6 +82,9 @@ export type ArticuloVista = {
   familia_raiz_id: string | null;
   ubicacion: string | null;
   estado_stock: "agotado" | "bajo" | "ok";
+  envase: string | null;
+  contenido: number | null;
+  stock_envases: number | null;
 };
 
 // Lo mínimo para elegir un artículo en un buscador

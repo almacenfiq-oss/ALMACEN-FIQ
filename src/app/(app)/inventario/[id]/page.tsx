@@ -4,12 +4,13 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { esPersonal, requierePerfil } from "@/lib/sesion";
 import { cant, fecha, fechaHora, hoy } from "@/lib/formato";
+import { ENVASE_COMO_UNIDAD, enEnvases, leerPresentacion, textoContenido } from "@/lib/unidades";
 import { MOVIMIENTOS, PICTOGRAMAS, TIPOS, type ArticuloVista, type Familia, type Grupo } from "@/lib/tipos";
 import { EstadoStock, Grupo as EtiquetaGrupo, Pictogramas } from "@/components/Etiquetas";
 import FormArticulo from "@/components/FormArticulo";
 import FormMovimiento from "@/components/FormMovimiento";
 import FormSimple from "@/components/FormSimple";
-import { guardarArticulo, guardarLote } from "../actions";
+import { convertirAPiezas, guardarArticulo, guardarLote } from "../actions";
 
 export const metadata: Metadata = { title: "Artículo" };
 
@@ -26,7 +27,7 @@ export default async function Articulo({ params, searchParams }: { params: Promi
   const personal = esPersonal(perfil);
 
   const [{ data: lotes }, { data: movs }, { data: familias }, { data: grupos }, { data: ubicaciones }, { data: prestados }] = await Promise.all([
-    supabase.from("lotes").select("id, lote, vencimiento, cantidad").eq("articulo_id", id).gt("cantidad", 0).order("vencimiento", { nullsFirst: false }),
+    supabase.from("lotes").select("id, lote, vencimiento, cantidad, envase, contenido, envases").eq("articulo_id", id).gt("cantidad", 0).order("vencimiento", { nullsFirst: false }),
     personal
       ? supabase.from("v_kardex").select("id, fecha, tipo, cantidad, signo, saldo, documento, nota, lote, usuario").eq("articulo_id", id).order("fecha", { ascending: false }).limit(200)
       : Promise.resolve({ data: [] }),
@@ -59,7 +60,7 @@ export default async function Articulo({ params, searchParams }: { params: Promi
       {creado && <div className="alert ok">Artículo creado. Ya aparece en el inventario.</div>}
 
       <div className="stats">
-        <div className="stat"><b>{cant(a.stock)}</b><span>En almacén ({a.unidad})</span></div>
+        <div className="stat"><b>{cant(a.stock)}</b><span>En almacén ({a.unidad === "unidad" ? "unidades" : a.unidad}){a.contenido ? <><br />{enEnvases(a.stock, a.contenido, a.envase, a.unidad)}</> : null}</span></div>
         {a.prestable && <div className="stat"><b>{cant(a.prestado)}</b><span>Prestado a alumnos</span></div>}
         {a.vencido > 0 && <div className="stat"><b>{cant(a.vencido)}</b><span>Vencido (dar de baja)</span></div>}
         <div className="stat"><b>{cant(a.utilizable)}</b><span>Disponible para usar</span></div>
@@ -92,17 +93,38 @@ export default async function Articulo({ params, searchParams }: { params: Promi
               </>
             )}
             <dt>Marca</dt><dd>{a.marca ?? "—"}</dd>
-            <dt>Presentación</dt><dd>{a.presentacion ?? "—"}</dd>
+            <dt>Viene en</dt><dd>{a.envase && a.contenido ? `${a.envase} de ${textoContenido(a.contenido, a.unidad)}` : a.presentacion ?? "—"}</dd>
             <dt>Ubicación</dt><dd>{a.ubicacion ?? "—"}</dd>
             <dt>Código de barras</dt><dd className="mono">{a.codigo_barras ?? "—"}</dd>
             {a.notas && <><dt>Notas</dt><dd>{a.notas}</dd></>}
           </dl>
         </section>
 
+        {personal && ENVASE_COMO_UNIDAD.includes(a.unidad) && (
+          <section className="panel aviso-panel">
+            <h2>Pasar de {a.unidad}s a unidades</h2>
+            <p className="ayuda">
+              Este artículo se está contando en <b>{a.unidad}s</b>. Es mejor contarlo por piezas: así prestas o entregas de a uno y la app sabe cuántos quedan.
+              Hoy figura con <b>{cant(a.stock)} {a.unidad}{Number(a.stock) === 1 ? "" : "s"}</b>.
+            </p>
+            <FormSimple accion={convertirAPiezas} textoBoton="Convertir a unidades" limpiar={false}>
+              <input type="hidden" name="articulo_id" value={a.id} />
+              <div className="fields">
+                <div className="field">
+                  <label htmlFor="cv-por">¿Cuántas piezas trae cada {a.unidad}?</label>
+                  <input id="cv-por" name="por" inputMode="numeric" required defaultValue={leerPresentacion(a.presentacion, "unidad")?.contenido ?? ""} placeholder="10" />
+                </div>
+              </div>
+              <label className="check"><input type="radio" name="modo" value="cajas" defaultChecked /> Son {cant(a.stock)} {a.unidad}s completas: se multiplica por lo que trae cada {a.unidad}</label>
+              <label className="check"><input type="radio" name="modo" value="piezas" /> Los {cant(a.stock)} ya son piezas sueltas: solo se corrige la unidad</label>
+            </FormSimple>
+          </section>
+        )}
+
         {personal && (
           <section className="panel">
             <h2>Registrar movimiento</h2>
-            <FormMovimiento articuloId={a.id} unidad={a.unidad} reactivo={a.tipo === "reactivo"} lotes={(lotes ?? []) as never} />
+            <FormMovimiento articuloId={a.id} unidad={a.unidad} reactivo={a.tipo === "reactivo"} lotes={(lotes ?? []) as never} envase={a.envase} contenido={a.contenido} />
           </section>
         )}
       </div>
@@ -112,13 +134,17 @@ export default async function Articulo({ params, searchParams }: { params: Promi
           <h2>Lotes</h2>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Lote</th><th>Vencimiento</th><th className="r">Cantidad</th>{personal && <th>Corregir</th>}</tr></thead>
+              <thead><tr><th>Lote</th><th>Vencimiento</th><th>Envase</th><th className="r">Queda</th>{personal && <th>Corregir</th>}</tr></thead>
               <tbody>
                 {(lotes ?? []).map((l) => (
                   <tr key={l.id}>
                     <td className="mono">{l.lote}</td>
                     <td>{fecha(l.vencimiento)} {l.vencimiento && l.vencimiento < hoyStr && <span className="chip vencido">Vencido</span>}</td>
-                    <td className="r num">{cant(l.cantidad)} {a.unidad}</td>
+                    <td>{(l.contenido ?? a.contenido) ? `${l.envases ? `${cant(l.envases)} × ` : ""}${l.envase ?? a.envase ?? "envase"} de ${textoContenido(l.contenido ?? a.contenido!, a.unidad)}` : "—"}</td>
+                    <td className="r num">
+                      <b>{cant(l.cantidad)} {a.unidad}</b>
+                      {(l.contenido ?? a.contenido) && <div className="muted" style={{ fontSize: 12 }}>{enEnvases(l.cantidad, l.contenido ?? a.contenido, l.envase ?? a.envase, a.unidad)}</div>}
+                    </td>
                     {personal && (
                       <td>
                         <details>

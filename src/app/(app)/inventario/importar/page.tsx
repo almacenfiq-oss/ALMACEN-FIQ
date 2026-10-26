@@ -7,11 +7,11 @@ import FormImportar from "@/components/FormImportar";
 export const metadata: Metadata = { title: "Importar inventario" };
 
 const PLANTILLA = [
-  ["Tipo", "Nombre", "Familia", "Fórmula", "CAS", "Grado", "Concentración", "Marca", "Presentación", "Capacidad", "Unidad", "Cantidad", "Mínimo", "Ubicación", "Lote", "Vencimiento", "Fiscalizado", "Prestable"],
-  ["Reactivo", "Cloruro de sodio", "Cloruros", "NaCl", "7647-14-5", "p.a.", "", "Merck", "Frasco 1 kg", "", "g", "2500", "500", "Estante de sales", "K123", "31/12/2027", "No", ""],
-  ["Reactivo", "Ácido clorhídrico", "Ácidos no oxidantes", "HCl", "7647-01-0", "p.a.", "37 %", "Merck", "Frasco 2.5 L", "", "mL", "5000", "1000", "Armario de ácidos", "", "", "Sí", ""],
-  ["Vidrio", "Vaso de precipitado", "", "", "", "", "", "Pyrex", "", "250 mL", "unidad", "40", "10", "Estante de vidrio", "", "", "", "Sí"],
-  ["Equipo", "Balanza analítica", "", "", "", "", "", "Ohaus", "", "220 g", "unidad", "2", "0", "Vitrina de equipos", "", "", "", "No"],
+  ["Tipo", "Nombre", "Familia", "Fórmula", "CAS", "Grado", "Concentración", "Marca", "Capacidad", "Unidad", "Envase", "Contenido", "Envases", "Cantidad", "Mínimo", "Ubicación", "Lote", "Vencimiento", "Fiscalizado", "Prestable"],
+  ["Reactivo", "Cloruro de sodio", "Cloruros", "NaCl", "7647-14-5", "p.a.", "", "Merck", "", "g", "frasco", "1 kg", "2", "480", "500", "Estante de sales", "K123", "31/12/2027", "No", ""],
+  ["Reactivo", "Ácido clorhídrico", "Ácidos no oxidantes", "HCl", "7647-01-0", "p.a.", "37 %", "Merck", "", "mL", "frasco", "2.5 L", "2", "", "1000", "Armario de ácidos", "", "", "Sí", ""],
+  ["Vidrio", "Vaso de precipitado", "", "", "", "", "", "Pyrex", "250 mL", "unidad", "caja", "10", "4", "3", "10", "Estante de vidrio", "", "", "", "Sí"],
+  ["Equipo", "Balanza analítica", "", "", "", "", "", "Ohaus", "220 g", "unidad", "", "", "", "2", "0", "Vitrina de equipos", "", "", "", "No"],
 ];
 
 export default async function Importar() {
@@ -35,6 +35,11 @@ export default async function Importar() {
           <li>
             Descarga la <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`} download="plantilla-inventario.csv">plantilla de ejemplo</a> y
             ábrela en Excel. Puedes usar tu propio archivo: solo necesita una columna <b>Nombre</b>; las demás son opcionales y pueden ir en cualquier orden.
+          </li>
+          <li>
+            <b>Envases:</b> en <b>Envase</b> escribe frasco, caja, galonera…; en <b>Contenido</b> cuánto trae cada uno (1 kg, 500 g, 2.5 L, 10); en <b>Envases</b> cuántos
+            llenos tienes, y en <b>Cantidad</b> lo suelto o de un frasco abierto. Ejemplo: 2 frascos de 1 kg y uno abierto con 480 g = 2480 g. Si no usas envases, pon todo en
+            <b> Cantidad</b>.
           </li>
           <li>Selecciona las filas, incluida la de títulos, cópialas (Ctrl+C) y pégalas abajo (Ctrl+V).</li>
           <li>Pulsa <b>Importar</b>. Las ubicaciones que no existan se crean solas. Importa cada lista una sola vez para no duplicar artículos.</li>

@@ -4,7 +4,7 @@ import { requierePerfil } from "@/lib/sesion";
 import { fecha, fechaHora } from "@/lib/formato";
 import { ROLES } from "@/lib/tipos";
 import FormSimple from "@/components/FormSimple";
-import { activarSemestre, guardarDocente, guardarSemestre, guardarSimple, guardarUsuario } from "./actions";
+import { activarSemestre, guardarDocente, guardarSemestre, guardarEncargado, guardarSimple, guardarUsuario } from "./actions";
 
 export const metadata: Metadata = { title: "Configuración" };
 
@@ -12,13 +12,14 @@ export default async function Configuracion() {
   const perfil = await requierePerfil(["admin", "almacen"]);
   const admin = perfil.rol === "admin";
   const supabase = await createClient();
-  const [{ data: sems }, { data: docentes }, { data: areas }, { data: ubicaciones }, cuentas, { data: perfiles }] = await Promise.all([
+  const [{ data: sems }, { data: docentes }, { data: areas }, { data: ubicaciones }, cuentas, { data: perfiles }, { data: encargados }] = await Promise.all([
     supabase.from("semestres").select("*").order("nombre", { ascending: false }),
     supabase.from("docentes").select("*, areas(nombre)").order("nombres"),
     supabase.from("areas").select("*").order("nombre"),
     supabase.from("ubicaciones").select("*").order("nombre"),
     admin ? supabase.rpc("usuarios_cuentas") : Promise.resolve({ data: [] }),
     supabase.from("perfiles").select("id, nombre, rol, activo"),
+    supabase.from("encargados").select("*").order("nombre"),
   ]);
   const perfilDe = new Map((perfiles ?? []).map((p) => [p.id, p]));
   const docenteDe = new Map((docentes ?? []).filter((d) => d.perfil_id).map((d) => [d.perfil_id as string, d.id as string]));
@@ -28,7 +29,7 @@ export default async function Configuracion() {
       <div className="head">
         <div>
           <h1>Configuración</h1>
-          <p className="sub">Semestres, docentes, áreas, ubicaciones del almacén y usuarios.</p>
+          <p className="sub">Semestres, docentes, encargados del almacén, áreas, ubicaciones y usuarios.</p>
         </div>
       </div>
 
@@ -103,6 +104,49 @@ export default async function Configuracion() {
           <summary>Agregar docente</summary>
           <div style={{ marginTop: 10 }}>
             <FormSimple accion={guardarDocente} textoBoton="Agregar docente"><CamposDocente areas={areas ?? []} /></FormSimple>
+          </div>
+        </details>
+      </section>
+
+      <section className="panel" id="encargados">
+        <h2>Encargados del almacén</h2>
+        <p className="ayuda">Son las personas que despachan. En cada acta de entrega y constancia de préstamo eliges quién despachó, y su nombre y DNI salen en la firma.</p>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Encargado</th><th>DNI</th><th>Cuenta</th><th>Editar</th></tr></thead>
+            <tbody>
+              {(encargados ?? []).map((x) => (
+                <tr key={x.id}>
+                  <td>{x.nombre} {!x.activo && <span className="chip vencido">Inactivo</span>}</td>
+                  <td className="mono">{x.dni ?? "—"}</td>
+                  <td>{x.perfil_id ? <span className="chip ok">Usa la app</span> : "—"}</td>
+                  <td>
+                    <details>
+                      <summary>Editar</summary>
+                      <FormSimple accion={guardarEncargado} textoBoton="Guardar" limpiar={false}>
+                        <input type="hidden" name="id" value={x.id} />
+                        <div className="fields">
+                          <div className="field"><label>Nombre completo</label><input name="nombre" defaultValue={x.nombre} required /></div>
+                          <div className="field"><label>DNI</label><input name="dni" defaultValue={x.dni ?? ""} inputMode="numeric" maxLength={8} className="mono" /></div>
+                        </div>
+                        <label className="check"><input type="checkbox" name="activo" defaultChecked={x.activo} /> Activo</label>
+                      </FormSimple>
+                    </details>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <details open={(encargados ?? []).length === 0}>
+          <summary>Agregar encargado</summary>
+          <div style={{ marginTop: 10 }}>
+            <FormSimple accion={guardarEncargado} textoBoton="Agregar encargado">
+              <div className="fields">
+                <div className="field"><label>Nombre completo</label><input name="nombre" required placeholder="Amelí …" /></div>
+                <div className="field"><label>DNI</label><input name="dni" inputMode="numeric" maxLength={8} className="mono" placeholder="Opcional" /></div>
+              </div>
+            </FormSimple>
           </div>
         </details>
       </section>
