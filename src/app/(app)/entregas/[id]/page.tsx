@@ -69,7 +69,7 @@ export default async function EntregaPagina({ params, searchParams }: { params: 
           </tbody>
         </table>
       </div>
-      <p className="ayuda">Los reactivos y materiales entregados son para uso en la práctica indicada y no se devuelven al almacén.</p>
+      <p className="ayuda">Los reactivos y materiales entregados son estrictamente para uso académico.</p>
       <Firmas
         izquierda={{ rol: "Entregué conforme (almacén)", nombre: e.encargados?.nombre, dni: e.encargados?.dni }}
         derecha={{ rol: "Recibí conforme", nombre: e.recibe ?? e.docentes.nombres }}
