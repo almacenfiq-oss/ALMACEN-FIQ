@@ -136,10 +136,14 @@ export async function borrarPractica(f: FormData) {
   await requierePerfil();
   const id = String(f.get("id"));
   const supabase = await createClient();
-  const { error } = await supabase.from("practicas").delete().eq("id", id);
-  if (error) redirect(`/practicas/${id}?error=${encodeURIComponent(mensajeError(error))}`);
+  const { data, error } = await supabase.from("practicas").delete().eq("id", id).select("id");
+  if (error) {
+    const msg = error.code === "23503" ? "No se puede eliminar: la práctica ya tiene entregas registradas." : mensajeError(error);
+    redirect(`/practicas/${id}?error=${encodeURIComponent(msg)}`);
+  }
+  if (!data?.length) redirect(`/practicas/${id}?error=${encodeURIComponent("No puedes eliminarla: ya fue enviada al almacén. Pide al almacén que la devuelva o la elimine.")}`);
   revalidatePath("/practicas");
-  redirect("/practicas");
+  redirect("/practicas?eliminada=1");
 }
 
 // Las prácticas se repiten cada semestre: copia la práctica y sus cantidades a otro semestre

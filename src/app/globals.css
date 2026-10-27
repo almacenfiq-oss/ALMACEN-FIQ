@@ -257,3 +257,4 @@ td.mono, td .mono { white-space: nowrap; }
 .foto-falta { aspect-ratio: 4 / 3; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 13px; }
 .foto-previa { max-width: 240px; max-height: 240px; border-radius: 8px; border: 1px solid var(--line); }
 .aviso-panel { border-color: #e3b341; background: color-mix(in srgb, #e3b341 8%, var(--surface)); }
+tr.dudosa td { background: color-mix(in srgb, #e3b341 10%, transparent); }

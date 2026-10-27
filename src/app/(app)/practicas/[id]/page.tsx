@@ -8,6 +8,7 @@ import { cant, fecha, fechaHora } from "@/lib/formato";
 import { ESTADO_ENTREGA } from "@/lib/tipos";
 import FormPractica from "@/components/FormPractica";
 import FormItems from "@/components/FormItems";
+import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPractica, cambiarEstado, cambiarItem, copiarPractica, editarPractica } from "../actions";
 
 export const metadata: Metadata = { title: "Práctica" };
@@ -24,14 +25,18 @@ export default async function Practica({ params, searchParams }: { params: Promi
   const personal = esPersonal(perfil);
   const editable = personal || p.estado === "borrador";
 
-  const [{ data: its }, { data: entregas }, sems, areas, articulos] = await Promise.all([
+  const [{ data: its }, { data: directas }, { data: porArea }, sems, areas, articulos] = await Promise.all([
     supabase.from("v_practica_items").select("*").eq("practica_id", id).order("nombre"),
     supabase.from("entregas").select("id, numero, fecha, recibe").eq("practica_id", id).order("fecha"),
+    supabase.from("entrega_reparto").select("entregas(id, numero, fecha, recibe)").eq("practica_id", id),
     listaSemestres(),
     areasActivas(),
     editable ? articulosCortos() : Promise.resolve([]),
   ]);
   const items = (its ?? []) as Item[];
+  type Ent = { id: string; numero: number; fecha: string; recibe: string | null };
+  const entregas = [...new Map([...(directas ?? []), ...((porArea ?? []) as unknown as { entregas: Ent }[]).map((r) => r.entregas)].map((e) => [e.id, e])).values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const borrable = editable && entregas.length === 0;
   const grupos = p.secciones * p.grupos_por_seccion;
   const falta = items.some((i) => i.total - i.entregado > i.disponible);
 
@@ -63,6 +68,12 @@ export default async function Practica({ params, searchParams }: { params: Promi
           )}
           {personal && items.length > 0 && p.estado_entrega !== "entregada" && (
             <Link className="btn primary" href={`/entregas/nueva?practica=${id}`}>Registrar entrega</Link>
+          )}
+          {borrable && (
+            <form action={borrarPractica}>
+              <input type="hidden" name="id" value={id} />
+              <BotonConfirmar texto="Eliminar práctica" pregunta={`¿Eliminar la práctica “${p.nombre}” y todos sus artículos? No se puede deshacer.`} />
+            </form>
           )}
         </div>
       </div>
@@ -137,11 +148,11 @@ export default async function Practica({ params, searchParams }: { params: Promi
         )}
       </section>
 
-      {(entregas ?? []).length > 0 && (
+      {entregas.length > 0 && (
         <section className="panel">
           <h2>Entregas de esta práctica</h2>
           <ul className="list">
-            {(entregas ?? []).map((e) => (
+            {entregas.map((e) => (
               <li key={e.id}>
                 <Link href={`/entregas/${e.id}`}>Entrega N.º {e.numero}</Link>
                 <span className="meta">{fechaHora(e.fecha)}{e.recibe ? ` · recibió ${e.recibe}` : ""}</span>
@@ -168,11 +179,8 @@ export default async function Practica({ params, searchParams }: { params: Promi
             </select>
             <button className="btn" type="submit">Copiar</button>
           </form>
-          {editable && (entregas ?? []).length === 0 && (
-            <form action={borrarPractica}>
-              <input type="hidden" name="id" value={id} />
-              <button className="btn small danger" type="submit">Borrar esta práctica</button>
-            </form>
+          {editable && entregas.length > 0 && (
+            <p className="ayuda">Esta práctica ya tiene entregas, por eso no se puede eliminar.</p>
           )}
         </section>
       </div>

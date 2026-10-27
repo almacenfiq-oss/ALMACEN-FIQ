@@ -61,3 +61,10 @@ export function leerPresentacion(texto: string | null | undefined, base: string)
 
 /** Unidades antiguas que en realidad son envases: el stock debe ir en piezas */
 export const ENVASE_COMO_UNIDAD: readonly string[] = ["caja", "paquete"];
+
+/** Igual que redondeo_abajo() de la base: piezas enteras; g y mL enteros (0.1 si es poco) */
+export function redondeoAbajo(c: number, unidad: string): number {
+  if (c <= 0) return 0;
+  if (unidad in MASA || unidad in VOLUMEN) return c >= 10 ? Math.floor(c) : Math.floor(c * 10) / 10;
+  return Math.floor(c);
+}

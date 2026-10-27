@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Total del semestre" };
 type Fila = {
   articulo_id: string; codigo: string; nombre: string; tipo: keyof typeof TIPOS; formula: string | null; unidad: string; familia: string | null;
   ubicacion: string | null; fiscalizado: boolean; practicas: number; requerido: number; requerido_con_margen: number; entregado: number;
-  pendiente: number; utilizable: number; faltante: number;
+  pendiente: number; utilizable: number; faltante: number; stock_minimo: number; sobre_minimo: number; para_comprar: number;
 };
 
 export default async function Requerimiento({ searchParams }: { searchParams: Promise<{ semestre?: string; tipo?: string; solo?: string }> }) {
@@ -22,16 +22,16 @@ export default async function Requerimiento({ searchParams }: { searchParams: Pr
   const supabase = await createClient();
   let q = supabase.from("v_requerimiento").select("*").eq("semestre_id", sem?.id ?? "").order("tipo").order("familia").order("nombre");
   if (f.tipo && f.tipo in TIPOS) q = q.eq("tipo", f.tipo);
-  if (f.solo === "falta") q = q.gt("faltante", 0);
+  if (f.solo === "falta") q = q.gt("para_comprar", 0);
   if (f.solo === "pendiente") q = q.gt("pendiente", 0);
   const { data } = await q;
   const filas = (data ?? []) as Fila[];
-  const faltan = filas.filter((x) => x.faltante > 0).length;
+  const faltan = filas.filter((x) => x.para_comprar > 0).length;
 
   const csv =
     "﻿" +
-    [["Código", "Artículo", "Tipo", "Familia", "Unidad", "Prácticas", "Requerido", `Con margen ${sem?.margen_pct ?? 0}%`, "Entregado", "Pendiente", "Disponible", "Falta comprar"]]
-      .concat(filas.map((x) => [x.codigo, x.nombre, TIPOS[x.tipo], x.familia ?? "", x.unidad, x.practicas, x.requerido, x.requerido_con_margen, x.entregado, x.pendiente, x.utilizable, x.faltante].map(String)))
+    [["Código", "Artículo", "Tipo", "Familia", "Unidad", "Prácticas", "Requerido", `Con margen ${sem?.margen_pct ?? 0}%`, "Entregado", "Pendiente", "Disponible", "Stock mínimo", "Sobre el mínimo", "Falta comprar"]]
+      .concat(filas.map((x) => [x.codigo, x.nombre, TIPOS[x.tipo], x.familia ?? "", x.unidad, x.practicas, x.requerido, x.requerido_con_margen, x.entregado, x.pendiente, x.utilizable, x.stock_minimo, x.sobre_minimo, x.para_comprar].map(String)))
       .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(";"))
       .join("\r\n");
 
@@ -69,13 +69,13 @@ export default async function Requerimiento({ searchParams }: { searchParams: Pr
           <select id="r-solo" name="solo" defaultValue={f.solo ?? ""}>
             <option value="">Todo</option>
             <option value="pendiente">Lo que falta entregar</option>
-            <option value="falta">Lo que no alcanza (comprar)</option>
+            <option value="falta">Lo que hay que comprar</option>
           </select>
         </div>
         <div className="row"><button className="btn primary" type="submit">Ver</button></div>
       </form>
 
-      {faltan > 0 && <div className="aviso">{faltan} artículo(s) no alcanzan para todo el semestre. Revisa la columna “Falta”.</div>}
+      {faltan > 0 && <div className="aviso">{faltan} artículo(s) no alcanzan para todo el semestre sin bajar del stock mínimo. Revisa la columna “Comprar”. Mientras tanto, al entregar se propone repartir lo que hay entre todas las áreas por igual.</div>}
 
       {filas.length === 0 ? (
         <div className="empty">No hay prácticas con artículos en este semestre.</div>
@@ -85,7 +85,7 @@ export default async function Requerimiento({ searchParams }: { searchParams: Pr
             <thead>
               <tr>
                 <th>Artículo</th><th>Familia</th><th className="r">Prácticas</th><th className="r">Requerido</th>
-                <th className="r">Entregado</th><th className="r">Por entregar</th><th className="r">Disponible</th><th className="r">Falta</th>
+                <th className="r">Entregado</th><th className="r">Por entregar</th><th className="r">Disponible</th><th className="r">Sobre el mínimo</th><th className="r">Comprar</th>
               </tr>
             </thead>
             <tbody>
@@ -102,7 +102,8 @@ export default async function Requerimiento({ searchParams }: { searchParams: Pr
                   <td className="r num">{x.entregado > 0 ? cant(x.entregado) : "—"}</td>
                   <td className="r num">{cant(x.pendiente)}</td>
                   <td className="r num">{cant(x.utilizable)}</td>
-                  <td className={`r num ${x.faltante > 0 ? "falta" : ""}`}>{x.faltante > 0 ? `${cant(x.faltante)} ${x.unidad}` : "—"}</td>
+                  <td className="r num">{cant(x.sobre_minimo)}{x.stock_minimo > 0 && <div className="muted" style={{ fontSize: 12 }}>mín. {cant(x.stock_minimo)}</div>}</td>
+                  <td className={`r num ${x.para_comprar > 0 ? "falta" : ""}`}>{x.para_comprar > 0 ? `${cant(x.para_comprar)} ${x.unidad}` : "—"}</td>
                 </tr>
               ))}
             </tbody>

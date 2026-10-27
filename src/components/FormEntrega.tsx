@@ -43,6 +43,11 @@ export default function FormEntrega({
       </div>
       <LineasArticulos articulos={articulos} inicial={inicial} textoVacio="Agrega lo que se entrega." />
       <p className="ayuda">Deja en blanco o en 0 lo que no entregues hoy; quedará pendiente para otra entrega. Lo entregado se descuenta del inventario y no se devuelve.</p>
+      {estado.bajoMinimo && (
+        <label className="check aviso">
+          <input type="checkbox" name="bajo_minimo" /> Entregar de todos modos (el almacén quedará por debajo del mínimo)
+        </label>
+      )}
       <div className="row">
         <button className="btn primary" type="submit" disabled={enviando}>{enviando ? "Registrando…" : "Registrar entrega"}</button>
       </div>

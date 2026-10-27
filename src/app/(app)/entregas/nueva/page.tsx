@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requierePerfil } from "@/lib/sesion";
 import { articulosCortos, docentesActivos } from "@/lib/consultas";
 import FormEntrega from "@/components/FormEntrega";
+import { redondeoAbajo } from "@/lib/unidades";
+import { cant } from "@/lib/formato";
 
 export const metadata: Metadata = { title: "Nueva entrega" };
 
@@ -15,15 +17,27 @@ export default async function NuevaEntrega({ searchParams }: { searchParams: Pro
 
   let titulo = "Entrega sin práctica";
   let inicial: { articulo_id: string; cantidad: string }[] = [];
+  const recortados: string[] = [];
   if (practica) {
     const [{ data: p }, { data: items }] = await Promise.all([
-      supabase.from("v_practicas").select("nombre, curso, docente, numero").eq("id", practica).maybeSingle(),
-      supabase.from("v_practica_items").select("articulo_id, total, entregado").eq("practica_id", practica).order("nombre"),
+      supabase.from("v_practicas").select("nombre, curso, docente, numero, semestre_id").eq("id", practica).maybeSingle(),
+      supabase.from("v_practica_items").select("articulo_id, nombre, unidad, total, entregado").eq("practica_id", practica).order("nombre"),
     ]);
     if (p) titulo = `${p.curso} · ${p.numero ? `Práctica ${p.numero}: ` : ""}${p.nombre} · ${p.docente}`;
-    // Propone lo que falta entregar de cada artículo
+    // Si lo que piden todas las áreas no cabe sobre el stock mínimo, se propone la parte justa
+    const { data: rep } = await supabase
+      .from("v_requerimiento")
+      .select("articulo_id, pendiente, sobre_minimo")
+      .eq("semestre_id", p?.semestre_id ?? "")
+      .in("articulo_id", (items ?? []).map((i) => i.articulo_id));
+    const factor = new Map((rep ?? []).map((r) => [r.articulo_id, Number(r.pendiente) > Number(r.sobre_minimo) ? Number(r.sobre_minimo) / Number(r.pendiente) : 1]));
     inicial = (items ?? [])
-      .map((i) => ({ articulo_id: i.articulo_id, cantidad: String(Math.max(Number(i.total) - Number(i.entregado), 0)) }))
+      .map((i) => {
+        const falta = Math.max(Number(i.total) - Number(i.entregado), 0);
+        const justo = redondeoAbajo(falta * (factor.get(i.articulo_id) ?? 1), i.unidad);
+        if (justo < falta) recortados.push(`${i.nombre}: ${cant(justo)} de ${cant(falta)} ${i.unidad}`);
+        return { articulo_id: i.articulo_id, cantidad: String(justo) };
+      })
       .filter((i) => Number(i.cantidad) > 0);
   }
 
@@ -36,6 +50,11 @@ export default async function NuevaEntrega({ searchParams }: { searchParams: Pro
           <p className="sub">{titulo}</p>
         </div>
       </div>
+      {recortados.length > 0 && (
+        <div className="aviso">
+          No alcanza para todos sin bajar del stock mínimo, así que se propone la parte que le toca a esta práctica: {recortados.join("; ")}. Lo que falta queda pendiente.
+        </div>
+      )}
       <section className="panel">
         <FormEntrega practicaId={practica} docentes={docentes} articulos={articulos} inicial={inicial} />
       </section>

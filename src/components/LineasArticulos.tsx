@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import EscanerCamara from "./EscanerCamara";
+import LectorPdf from "./LectorPdf";
 import { cant, plano } from "@/lib/formato";
 import { TIPOS, type ArticuloCorto } from "@/lib/tipos";
 
@@ -13,12 +14,14 @@ export default function LineasArticulos({
   articulos,
   name = "items",
   conPor = false,
+  conPdf = false,
   inicial = [],
   textoVacio = "Busca un artículo o escanea su código para agregarlo.",
 }: {
   articulos: ArticuloCorto[];
   name?: string;
   conPor?: boolean;
+  conPdf?: boolean;
   inicial?: Linea[];
   textoVacio?: string;
 }) {
@@ -68,7 +71,20 @@ export default function LineasArticulos({
           aria-label="Buscar artículo"
         />
       </div>
-      <EscanerCamara onCodigo={porCodigo} />
+      <div className="row" style={{ gap: 8 }}>
+        <EscanerCamara onCodigo={porCodigo} />
+        {conPdf && (
+          <LectorPdf
+            articulos={articulos}
+            onAgregar={(nuevas) =>
+              setLineas((ls) => {
+                const resto = ls.filter((l) => !nuevas.some((n) => n.articulo_id === l.articulo_id));
+                return [...resto, ...nuevas];
+              })
+            }
+          />
+        )}
+      </div>
       {aviso && <div className="aviso">{aviso}</div>}
       {resultados.length > 0 && (
         <div className="lista">

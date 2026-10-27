@@ -17,7 +17,7 @@ export default function FormItems({ practicaId, articulos }: { practicaId: strin
       <input type="hidden" name="practica_id" value={practicaId} />
       {estado.error && <div className="alert error" role="alert">{estado.error}</div>}
       {estado.ok && <div className="alert ok" role="status">{estado.ok}</div>}
-      <LineasArticulos key={clave} articulos={articulos} conPor />
+      <LineasArticulos key={clave} articulos={articulos} conPor conPdf />
       <div className="row">
         <button className="btn primary" type="submit" disabled={enviando}>{enviando ? "Guardando…" : "Agregar a la práctica"}</button>
       </div>

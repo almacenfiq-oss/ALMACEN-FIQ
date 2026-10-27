@@ -12,6 +12,7 @@
     "@supabase/ssr": "0.6.1",
     "@supabase/supabase-js": "2.49.4",
     "next": "15.5.28",
+    "pdfjs-dist": "^4.10.38",
     "react": "19.1.10",
     "react-dom": "19.1.10"
   },

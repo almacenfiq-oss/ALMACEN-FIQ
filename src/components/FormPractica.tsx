@@ -107,7 +107,7 @@ export default function FormPractica({
             Escribe la cantidad para <b>un grupo</b>; el sistema la multiplica por todos los grupos de todas las secciones. Si algo se usa una sola vez
             por sección (por ejemplo, un frasco de indicador para todo el salón), elige “cada sección”.
           </p>
-          <LineasArticulos articulos={articulos} conPor />
+          <LineasArticulos articulos={articulos} conPor conPdf />
         </>
       )}
       <div className="row">

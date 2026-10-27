@@ -41,6 +41,9 @@ Cada cambio posterior a la instalación vendrá en `supabase/actualizaciones/` c
 | Fecha | Archivo | Qué trae |
 |---|---|---|
 | 2026-10-26 | `2026-10-26-envases-encargados-fotos.sql` | Registrar por cajas o frascos (el stock sigue en unidades, g o mL), encargados que despachan con nombre y DNI en las actas, y fotos de evidencia de cada entrega |
+| 2026-10-27 | `2026-10-27-entregas-por-area.sql` | Entrega por área (todo el semestre de una vez o por partes, con saldo pendiente) y propuesta de reparto que no deja el almacén por debajo del stock mínimo |
+
+La lectura de guías en PDF se hace en el navegador con pdf.js: el archivo no se sube a ningún servicio. Funciona con PDF que tienen texto (los exportados desde Word); una hoja escaneada no tiene texto que leer.
 
 Las fotos de evidencia se guardan en Supabase Storage (bucket privado `evidencias`). La app las reduce antes de subirlas (unos 150 KB cada una), así que el 1 GB gratuito alcanza para miles de fotos.
 

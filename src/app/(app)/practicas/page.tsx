@@ -14,7 +14,7 @@ type Practica = {
   secciones: number; grupos_por_seccion: number; estado: string; items: number; estado_entrega: string;
 };
 
-export default async function Practicas({ searchParams }: { searchParams: Promise<{ semestre?: string; area?: string; docente?: string; estado?: string }> }) {
+export default async function Practicas({ searchParams }: { searchParams: Promise<{ semestre?: string; area?: string; docente?: string; estado?: string; eliminada?: string }> }) {
   const perfil = await requierePerfil();
   const f = await searchParams;
   const semestres = await listaSemestres();
@@ -51,6 +51,7 @@ export default async function Practicas({ searchParams }: { searchParams: Promis
         <div className="aviso">Tu cuenta aún no está enlazada a tu ficha de docente. Pide al almacén que la enlace en Configuración → Docentes.</div>
       )}
 
+      {f.eliminada && <div className="alert ok">Práctica eliminada.</div>}
       <form className="filters" method="get">
         <div className="field">
           <label htmlFor="f-sem">Semestre</label>
