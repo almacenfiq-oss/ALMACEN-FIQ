@@ -9,7 +9,7 @@ import { ESTADO_ENTREGA } from "@/lib/tipos";
 import FormPractica from "@/components/FormPractica";
 import FormItems from "@/components/FormItems";
 import BotonConfirmar from "@/components/BotonConfirmar";
-import { borrarPractica, cambiarEstado, cambiarItem, copiarPractica, editarPractica } from "../actions";
+import { borrarPractica, cambiarEstado, cambiarItem, copiarPractica, editarPractica, quitarItem } from "../actions";
 
 export const metadata: Metadata = { title: "Práctica" };
 
@@ -122,7 +122,7 @@ export default async function Practica({ params, searchParams }: { params: Promi
                               <option value="seccion">sección</option>
                             </select>
                             <button className="btn small" type="submit">Guardar</button>
-                            <button className="btn small danger" type="submit" name="quitar" value="1">Quitar</button>
+                            <button className="btn small danger" type="submit" formAction={quitarItem}>Quitar</button>
                           </form>
                         ) : (
                           <>{cant(i.cantidad)} {i.unidad} por {i.por === "grupo" ? "grupo" : "sección"}</>

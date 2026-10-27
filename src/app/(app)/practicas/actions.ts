@@ -111,13 +111,22 @@ export async function cambiarItem(f: FormData) {
   const id = String(f.get("id"));
   const practica = String(f.get("practica_id"));
   const supabase = await createClient();
-  if (f.get("quitar")) {
-    await supabase.from("practica_items").delete().eq("id", id);
-  } else {
-    const c = numero(f.get("cantidad"));
-    if (c && !Number.isNaN(c) && c > 0) {
-      await supabase.from("practica_items").update({ cantidad: c, por: f.get("por") === "seccion" ? "seccion" : "grupo" }).eq("id", id);
-    }
+  const c = numero(f.get("cantidad"));
+  if (c && !Number.isNaN(c) && c > 0) {
+    await supabase.from("practica_items").update({ cantidad: c, por: f.get("por") === "seccion" ? "seccion" : "grupo" }).eq("id", id);
+  }
+  revalidatePath(`/practicas/${practica}`);
+}
+
+export async function quitarItem(f: FormData) {
+  await requierePerfil();
+  const id = String(f.get("id"));
+  const practica = String(f.get("practica_id"));
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("practica_items").delete().eq("id", id).select("id");
+  if (error || !data?.length) {
+    const msg = error ? mensajeError(error) : "No se pudo quitar: la práctica ya fue enviada al almacén.";
+    redirect(`/practicas/${practica}?error=${encodeURIComponent(msg)}`);
   }
   revalidatePath(`/practicas/${practica}`);
 }
